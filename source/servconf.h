@@ -54,6 +54,13 @@
 /* Magic name for internal sftp-server */
 #define INTERNAL_SFTP_NAME	"internal-sftp"
 
+/* 追加 2017/07/31 START */
+/* 認証時間しきい値のデフォルト値 */
+#define DEFAULT_AUTH_TIME_THRESHOLD  0.8
+
+extern double AuthTimeThreshold; //認証時間しきい値格納用変数
+/* 追加 2017/07/31 END */
+
 typedef struct {
 	u_int	num_ports;
 	u_int	ports_from_cmdline;
@@ -189,6 +196,11 @@ typedef struct {
 	char   *auth_methods[MAX_AUTH_METHODS];
 
 	int	fingerprint_hash;
+
+	/* 追加 2017/07/31 START */
+	double auth_time_threshold; /* 認証時間しきい値の宣言 */
+	/* 追加 2017/07/31 END */
+
 }       ServerOptions;
 
 /* Information about the incoming connection as used by Match */

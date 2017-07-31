@@ -100,6 +100,20 @@ static char *authmethods_get(Authctxt *authctxt);
 #define MATCH_PARTIAL	3	/* method matches, submethod can't be checked */
 static int list_starts_with(const char *, const char *, const char *);
 
+/* 追加 2017/07/31 START */
+struct timeval s; //パスワード入力開始時間を格納
+struct timeval s2; //1コネクションで複数回の試行があった場合はこの変数に開始時間を格納
+int MULTIPLE_AUTH = 0;
+char *USER; //AuthInfoのユーザ名用変数
+double AuthTimeThreshold;
+
+//鍵交換時のRTTが格納される変数
+double KEXINIT_TIME;
+extern double KEXINIT_TIME;
+double NEWKEYS_TIME;
+extern double NEWKEYS_TIME;
+/* 追加 2017/07/31 END */
+
 char *
 auth2_read_banner(void)
 {
@@ -200,6 +214,12 @@ input_service_request(int type, u_int32_t seq, void *ctxt)
 		packet_put_cstring(service);
 		packet_send();
 		packet_write_wait();
+
+		/* 追加 2017/07/31 START */
+		//認証開始時間はnoneメソッドを送信するツールに対してはuserauth_finish関数内のものを，そうでないものはここで取得しているものが認証開始時間となる
+		gettimeofday(&s, NULL); //認証開始時間
+		/* 追加 2017/07/31 END */
+
 	} else {
 		debug("bad service request %s", service);
 		packet_disconnect("bad service request %s", service);
@@ -226,6 +246,10 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	method = packet_get_cstring(NULL);
 	debug("userauth-request for user %s service %s method %s", user, service, method);
 	debug("attempt %d failures %d", authctxt->attempt, authctxt->failures);
+
+	/* 追加 2017/07/31 START */
+	USER = user; //AuthInfo用にユーザ名をグローバル変数に格納
+	/* 追加 2017/07/31 END */
 
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
@@ -300,6 +324,13 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 	char *methods;
 	int partial = 0;
 
+	/* 追加 2017/07/31 START */
+	struct timeval e;
+	double authtime;
+	char detection[10];
+	struct tm *time_st;
+	/* 追加 2017/07/31 END */
+
 	if (!authctxt->valid && authenticated)
 		fatal("INTERNAL ERROR: authenticated invalid user %s",
 		    authctxt->user);
@@ -358,8 +389,82 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 		packet_write_wait();
 		/* now we can break out */
 		authctxt->success = 1;
+
+		/* 追加 2017/07/31 START */
+		gettimeofday(&e, NULL);
+		time_st = localtime(&e.tv_sec); //現在時刻を現地化
+
+		//コネクション中の最初の認証のみ開始時間をinput_service_request関数内のs，それ以降はuserauth_finish関数内のs2とする
+		if(MULTIPLE_AUTH == 0){
+			authtime = (e.tv_sec - s.tv_sec) + (e.tv_usec - s.tv_usec) * 1.0E-6;
+		}else{
+			authtime = (e.tv_sec - s2.tv_sec) + (e.tv_usec - s2.tv_usec) * 1.0E-6;
+		}
+
+
+		if (authtime < AuthTimeThreshold) {
+			strcpy(detection, "Attack");
+		} else {
+			strcpy(detection, "Normal");
+		}
+
+		logit("[Auth:Success,User:%s,IP:%s,Time:%lf,Detect:%s,RTT:%06lf,Year:%d,Month:%02d,Day:%02d,Hour:%02d,Minute:%02d,Second:%02d,MicroSec:%06d]KEXINIT:%lf,NEWKEYS:%lf",
+			  USER,
+			  ssh_remote_ipaddr(ssh),
+			  authtime,
+			  detection,
+			  ((KEXINIT_TIME + NEWKEYS_TIME)/2),
+			  time_st->tm_year+1900,
+			  time_st->tm_mon+1,
+			  time_st->tm_mday,
+			  time_st->tm_hour,
+			  time_st->tm_min,
+			  time_st->tm_sec,
+			  e.tv_usec,
+			  KEXINIT_TIME,
+			  NEWKEYS_TIME
+		);
+		/* 追加 2017/07/31 END */
+
 		ssh_packet_set_log_preamble(ssh, "user %s", authctxt->user);
 	} else {
+
+		/* 追加 2017/07/31 START */
+		if(strcmp(method,"password") == 0) { /* password認証前のnone，公開鍵認証の失敗は無視 */
+			gettimeofday(&e, NULL); //認証終了時間
+			time_st = localtime(&e.tv_sec); //現在時刻を現地化
+
+			//コネクション中の最初の認証のみ開始時間をinput_service_request関数内のs，それ以降はuserauth_finish関数内のs2とする
+			if (MULTIPLE_AUTH == 0){
+				authtime = (e.tv_sec - s.tv_sec) + (e.tv_usec - s.tv_usec) * 1.0E-6;
+			}else{
+				authtime = (e.tv_sec - s2.tv_sec) + (e.tv_usec - s2.tv_usec) * 1.0E-6;
+			}
+
+			if (authtime < AuthTimeThreshold) {
+				strcpy(detection, "Attack");
+			} else {
+				strcpy(detection, "Normal");
+			}
+
+			logit("[Auth:Fail,User:%s,IP:%s,Time:%lf,Detect:%s,RTT:%06lf,Year:%d,Month:%02d,Day:%02d,Hour:%02d,Minute:%02d,Second:%02d,MicroSec:%06d]KEXINIT:%lf,NEWKEYS:%lf",
+				  USER,
+				  ssh_remote_ipaddr(ssh),
+				  authtime,
+				  detection,
+				  ((KEXINIT_TIME + NEWKEYS_TIME)/2),
+				  time_st->tm_year+1900,
+				  time_st->tm_mon+1,
+				  time_st->tm_mday,
+				  time_st->tm_hour,
+				  time_st->tm_min,
+				  time_st->tm_sec,
+				  e.tv_usec,
+				  KEXINIT_TIME,
+				  NEWKEYS_TIME
+			);
+		}
+		/* 追加 2017/07/31 END */
 
 		/* Allow initial try of "none" auth without failure penalty */
 		if (!partial && !authctxt->server_caused_failure &&
@@ -380,6 +485,20 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 		packet_send();
 		packet_write_wait();
 		free(methods);
+
+		/* 追加 2017/07/31 START */
+		if(strcmp(method,"password") == 0) { //2回目以降の認証試行時に実行される
+			MULTIPLE_AUTH = 1;
+			gettimeofday(&s2, NULL);
+			//logit("received password method.");
+		}
+
+		if(strcmp(method,"none") == 0) { //最初の認証試行時に実行される
+			gettimeofday(&s, NULL);
+			//logit("received none method. started userauth. ");
+		}
+		/* 追加 2017/07/31 END */
+
 	}
 }
 

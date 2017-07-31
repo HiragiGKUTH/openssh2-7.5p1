@@ -164,6 +164,11 @@ initialize_server_options(ServerOptions *options)
 	options->version_addendum = NULL;
 	options->fingerprint_hash = -1;
 	options->disable_forwarding = -1;
+
+	/* 追加 2017/07/31 START */
+	options->auth_time_threshold = 0.0; /* 認証時間しきい値 */
+	/* 追加 2017/07/31 END */
+
 }
 
 /* Returns 1 if a string option is unset or set to "none" or 0 otherwise. */
@@ -334,6 +339,11 @@ fill_default_server_options(ServerOptions *options)
 	if (options->disable_forwarding == -1)
 		options->disable_forwarding = 0;
 
+	/* 追加 2017/07/31 START */
+	if (options->auth_time_threshold == 0.0)  // 認証時間しきい値のデフォルト値設定
+		options->auth_time_threshold = DEFAULT_AUTH_TIME_THRESHOLD;
+	/* 追加 2017/07/31 END */
+
 	assemble_algorithms(options);
 
 	/* Turn privilege separation and sandboxing on by default */
@@ -419,6 +429,11 @@ typedef enum {
 	sStreamLocalBindMask, sStreamLocalBindUnlink,
 	sAllowStreamLocalForwarding, sFingerprintHash, sDisableForwarding,
 	sDeprecated, sIgnore, sUnsupported
+
+	/* 追加 2017/07/31 START */
+	, sAuthTimeThreshold /* 認証時間しきい値用トークン */
+	/* 追加 2017/07/31 END */
+
 } ServerOpCodes;
 
 #define SSHCFG_GLOBAL	0x01	/* allowed in main section of sshd_config */
@@ -561,6 +576,11 @@ static struct {
 	{ "allowstreamlocalforwarding", sAllowStreamLocalForwarding, SSHCFG_ALL },
 	{ "fingerprinthash", sFingerprintHash, SSHCFG_GLOBAL },
 	{ "disableforwarding", sDisableForwarding, SSHCFG_ALL },
+
+	/* 追加 2017/07/31 START */
+	{ "authtimethreshold", sAuthTimeThreshold, SSHCFG_GLOBAL}, /* 認証時間しきい値用 */
+	/* 追加 2017/07/31 END */
+
 	{ NULL, sBadOption, 0 }
 };
 
@@ -958,6 +978,11 @@ process_server_config_line(ServerOptions *options, char *line,
 {
 	char *cp, **charptr, *arg, *p;
 	int cmdline = 0, *intptr, value, value2, n, port;
+
+	/* 追加 2017/07/31 START */
+	double threshold;
+	/* 追加 2017/07/31 END */
+
 	SyslogFacility *log_facility_ptr;
 	LogLevel *log_level_ptr;
 	ServerOpCodes opcode;
@@ -1043,6 +1068,13 @@ process_server_config_line(ServerOptions *options, char *line,
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
+
+	/* 追加 2017/07/31 START */
+	case sAuthTimeThreshold: // confから読み込んだ数値のポインタを変数に代入
+		arg = strdelim(&cp);
+		AuthTimeThreshold = atof(arg);
+		break;
+	/* 追加 2017/07/31 START */
 
 	case sListenAddress:
 		arg = strdelim(&cp);
