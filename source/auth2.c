@@ -408,22 +408,24 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 			strcpy(detection, "Normal");
 		}
 
-		logit("[Auth:Success,User:%s,IP:%s,Time:%lf,Detect:%s,RTT:%06lf,Year:%d,Month:%02d,Day:%02d,Hour:%02d,Minute:%02d,Second:%02d,MicroSec:%06d]KEXINIT:%lf,NEWKEYS:%lf",
-			  USER,
-			  ssh_remote_ipaddr(ssh),
-			  authtime,
-			  detection,
-			  ((KEXINIT_TIME + NEWKEYS_TIME)/2),
-			  time_st->tm_year+1900,
-			  time_st->tm_mon+1,
-			  time_st->tm_mday,
-			  time_st->tm_hour,
-			  time_st->tm_min,
-			  time_st->tm_sec,
-			  e.tv_usec,
-			  KEXINIT_TIME,
-			  NEWKEYS_TIME
-		);
+		if(strcmp(method,"password") == 0) { /* password認証前のnone，公開鍵認証の失敗は無視 */
+			logit("[Auth:Success,User:%s,IP:%s,Time:%lf,Detect:%s,RTT:%06lf,Year:%d,Month:%02d,Day:%02d,Hour:%02d,Minute:%02d,Second:%02d,MicroSec:%06d]KEXINIT:%lf,NEWKEYS:%lf",
+				  USER,
+				  ssh_remote_ipaddr(ssh),
+				  authtime,
+				  detection,
+				  ((KEXINIT_TIME + NEWKEYS_TIME)/2),
+				  time_st->tm_year+1900,
+				  time_st->tm_mon+1,
+				  time_st->tm_mday,
+				  time_st->tm_hour,
+				  time_st->tm_min,
+				  time_st->tm_sec,
+				  e.tv_usec,
+				  KEXINIT_TIME,
+				  NEWKEYS_TIME
+			);
+		}
 		/* 追加 2017/07/31 END */
 
 		ssh_packet_set_log_preamble(ssh, "user %s", authctxt->user);
