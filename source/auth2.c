@@ -497,6 +497,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 			gettimeofday(&s, NULL);
 			//logit("received none method. started userauth. ");
 		}
+		logit("  method: %s", method);
 		/* 追加 2017/07/31 END */
 
 	}
