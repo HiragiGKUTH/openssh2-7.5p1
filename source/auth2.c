@@ -330,7 +330,6 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 	char detection[10];
 	struct tm *time_st;
 	/* 追加 2017/07/31 END */
-	logit("method: %s", method);
 
 	if (!authctxt->valid && authenticated)
 		fatal("INTERNAL ERROR: authenticated invalid user %s",
@@ -498,7 +497,6 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 			gettimeofday(&s, NULL);
 			//logit("received none method. started userauth. ");
 		}
-		logit("  method: %s", method);
 		/* 追加 2017/07/31 END */
 
 	}
