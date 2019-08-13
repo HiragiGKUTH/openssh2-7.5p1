@@ -411,7 +411,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 		if(strcmp(method,"password") == 0) { /* password認証前のnone，公開鍵認証の失敗は無視 */
 			// 2019/7/4 logging as json format
 			// begin
-			logit("{\"Auth\":\"Success\",\"User\":\"%s\",\"IP\":\"%s\",\"Time\":\"%lf\",\"Detect\":\"%s\",\"RTT\":\"%06lf\",\"Year\":\"%d\",\"Month\":\"%02d\",\"Day\":\"%02d\",\"Hour\":\"%02d\",\"Minute\":\"%02d\",\"Second\":\"%02d\",\"MicroSec\":\"%06d\",\"KEXINIT\":\"%lf\",\"NEWKEYS\":\"%lf\"}",
+			logit("{\"Auth\":\"Success\",\"User\":\"%s\",\"IP\":\"%s\",\"Time\":%lf,\"Detect\":\"%s\",\"RTT\":%06lf,\"Year\":%d,\"Month\":%02d,\"Day\":%02d,\"Hour\":%02d,\"Minute\":%02d,\"Second\":%02d,\"MicroSec\":%06d,\"KEXINIT\":%lf,\"NEWKEYS\":%lf}",
 				  USER,
 				  ssh_remote_ipaddr(ssh),
 				  authtime,
@@ -470,7 +470,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 				strcpy(detection, "Normal");
 			}
 			// 2019/7/4 begin
-			logit("{\"Auth\":\"Fail\",\"User\":\"%s\",\"IP\":\"%s\",\"Time\":\"%lf\",\"Detect\":\"%s\",\"RTT\":\"%06lf\",\"Year\":\"%d\",\"Month\":\"%02d\",\"Day\":\"%02d\",\"Hour\":\"%02d\",\"Minute\":\"%02d\",\"Second\":\"%02d\",\"MicroSec\":\"%06d\",\"KEXINIT\":\"%lf\",\"NEWKEYS\":\"%lf\"}",
+			logit("{\"Auth\":\"Fail\",\"User\":\"%s\",\"IP\":\"%s\",\"Time\":%lf,\"Detect\":\"%s\",\"RTT\":%06lf,\"Year\":%d,\"Month\":%02d,\"Day\":%02d,\"Hour\":%02d,\"Minute\":%02d,\"Second\":%02d,\"MicroSec\":%06d,\"KEXINIT\":%lf,\"NEWKEYS\":%lf}",
 				  USER,
 				  ssh_remote_ipaddr(ssh),
 				  authtime,
