@@ -409,9 +409,9 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 		}
 
 		if(strcmp(method,"password") == 0) { /* password認証前のnone，公開鍵認証の失敗は無視 */
-			// 2019/7/4 logging as json format
+			// 2019/9/6 logging as csv format
 			// begin
-			logit("{\"Auth\":\"Success\",\"User\":\"%s\",\"IP\":\"%s\",\"Time\":%lf,\"Detect\":\"%s\",\"RTT\":%06lf,\"Year\":%d,\"Month\":%02d,\"Day\":%02d,\"Hour\":%02d,\"Minute\":%02d,\"Second\":%02d,\"MicroSec\":%06d,\"KEXINIT\":%lf,\"NEWKEYS\":%lf}",
+			logit("Success,%s,%s,%lf,%s,%06lf,%d,%02d,%02d,%02d,%02d,%02d,%06d,%lf,%lf",
 				  USER,
 				  ssh_remote_ipaddr(ssh),
 				  authtime,
@@ -427,7 +427,7 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 				  KEXINIT_TIME,
 				  NEWKEYS_TIME
 			);
-			// end 2019/7/4
+			// end 2019/9/6
 			// 後方互換性のため，レガシーコードを残しておく
 			logit("[Auth:Success,User:%s,IP:%s,Time:%lf,Detect:%s,RTT:%06lf,Year:%d,Month:%02d,Day:%02d,Hour:%02d,Minute:%02d,Second:%02d,MicroSec:%06d]KEXINIT:%lf,NEWKEYS:%lf",
 				  USER,
@@ -469,8 +469,8 @@ userauth_finish(Authctxt *authctxt, int authenticated, const char *method,
 			} else {
 				strcpy(detection, "Normal");
 			}
-			// 2019/7/4 begin
-			logit("{\"Auth\":\"Fail\",\"User\":\"%s\",\"IP\":\"%s\",\"Time\":%lf,\"Detect\":\"%s\",\"RTT\":%06lf,\"Year\":%d,\"Month\":%02d,\"Day\":%02d,\"Hour\":%02d,\"Minute\":%02d,\"Second\":%02d,\"MicroSec\":%06d,\"KEXINIT\":%lf,\"NEWKEYS\":%lf}",
+			// 2019/9/6 begin
+			logit("Fail,%s,%s,%lf,%s,%06lf,%d,%02d,%02d,%02d,%02d,%02d,%06d,%lf,%lf",
 				  USER,
 				  ssh_remote_ipaddr(ssh),
 				  authtime,
